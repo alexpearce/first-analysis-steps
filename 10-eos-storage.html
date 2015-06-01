@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>LHCb Starterkit: First steps in LHCb</title>
+    <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" type="text/css" href="css/bootstrap/bootstrap.css" />
+    <link rel="stylesheet" type="text/css" href="css/bootstrap/bootstrap-theme.css" />
+    <link rel="stylesheet" type="text/css" href="css/swc.css" />
+    <link rel="alternate" type="application/rss+xml" title="Software Carpentry Blog" href="http://software-carpentry.org/feed.xml"/>
+    <meta charset="UTF-8" />
+    <!-- HTML5 shim, for IE6-8 support of HTML5 elements -->
+    <!--[if lt IE 9]>
+      <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+  </head>
+  <body class="lesson">
+    <div class="container card">
+      <div class="banner">
+        <a href="https://lhcb.github.io/first-analysis-steps/">
+          <img src="img/starterkit.png" height="100" alt="LHCb Starterkit">
+        </a>
+      </div>
+      <div class="row">
+        <div class="col-md-10 col-md-offset-1">
+          <h1 class="title">First steps in LHCb</h1>
+          <h2 class="subtitle">Storing large files on EOS</h2>
+<div id="learning-objectives" class="objectives panel panel-warning">
+<div class="panel-heading">
+<h2><span class="glyphicon glyphicon-certificate"></span>Learning Objectives</h2>
+</div>
+<div class="panel-body">
+<ul>
+<li>Run a ganga job which puts output onto EOS</li>
+<li>Open and view the files on EOS</li>
+</ul>
+</div>
+</div>
+<p>During a real analysis the output of your jobs will quickly grow beyond what fits onto your AFS space. CERN provides you with 2TB of space on a set of hard drives called the <a href="http://information-technology.web.cern.ch/services/eos-service">EOS service</a>.</p>
+<p><code>ganga</code> needs configuring in order to know which files to store on EOS, as well as where on EOS to store them. Open <code>~/.gangarc</code> in your favourite editor and look for a line that starts with <code>MassStorageFile</code>. In <code>ganga</code> a <code>MassStorageFile</code> represents a file stored on something like EOS or CASTOR. Change it to look like the following:</p>
+<pre class="sourceCode python"><code class="sourceCode python">MassStorageFile = {<span class="st">&#39;fileExtensions&#39;</span>: [<span class="st">&#39;&#39;</span>],
+                   <span class="co">&#39;uploadOptions&#39;</span>: {<span class="st">&#39;path&#39;</span>: <span class="st">&#39;/eos/lhcb/user/a/another&#39;</span>,
+                                     <span class="co">&#39;cp_cmd&#39;</span>: <span class="st">&#39;/afs/cern.ch/project/eos/installation/lhcb/bin/eos.select cp&#39;</span>,
+                                     <span class="co">&#39;ls_cmd&#39;</span>: <span class="st">&#39;/afs/cern.ch/project/eos/installation/lhcb/bin/eos.select ls&#39;</span>,
+                                     <span class="co">&#39;mkdir_cmd&#39;</span>: <span class="st">&#39;/afs/cern.ch/project/eos/installation/lhcb/bin/eos.select mkdir&#39;</span>
+                                    },
+                   <span class="co">&#39;backendPostprocess&#39;</span>: {<span class="st">&#39;LSF&#39;</span>: <span class="st">&#39;WN&#39;</span>, <span class="st">&#39;Dirac&#39;</span>: <span class="st">&#39;client&#39;</span>,
+                                          <span class="co">&#39;LCG&#39;</span>: <span class="st">&#39;client&#39;</span>, <span class="st">&#39;ARC&#39;</span>: <span class="st">&#39;client&#39;</span>, 
+                                          <span class="co">&#39;CREAM&#39;</span>: <span class="st">&#39;client&#39;</span>, <span class="st">&#39;Localhost&#39;</span>: <span class="st">&#39;WN&#39;</span>,
+                                          <span class="co">&#39;Interactive&#39;</span>: <span class="st">&#39;client&#39;</span>}
+                  }</code></pre>
+<p>The line should look very similar to this already, the only thing that needs changing is the <code>path</code> entry. You should change it to your EOS home directory which is <code>/eos/lhcb/user/a/another</code> if your username is <code>another</code>.</p>
+<div id="automatically-transfer-files" class="callout panel panel-info">
+<div class="panel-heading">
+<h2><span class="glyphicon glyphicon-pushpin"></span>Automatically transfer files</h2>
+</div>
+<div class="panel-body">
+<p>You can use the <code>fileExtensions</code> entry to specify a list of file extensions that should be transfered to EOS by default. For the moment leave this set to <code>['']</code>.</p>
+</div>
+</div>
+<p>Related to this there is an entry for <code>DiracFiles</code>, which represent files stored on the Grid. By default any file ending in <code>.dst</code> will not be downloaded nor stored on EOS. It will be stored on some storage element on the Grid. For files which you do not plan to work with interactively and instead feed into a different grid job it makes sense to leave them on the grid.</p>
+<pre class="sourceCode python"><code class="sourceCode python">DiracFile = {<span class="st">&#39;fileExtensions&#39;</span>: [<span class="st">&#39;*.dst&#39;</span>],
+             <span class="co">&#39;uploadOptions&#39;</span>: {},
+             <span class="co">&#39;backendPostprocess&#39;</span>: {<span class="st">&#39;LSF&#39;</span>: <span class="st">&#39;WN&#39;</span>, <span class="st">&#39;Dirac&#39;</span>: <span class="st">&#39;WN&#39;</span>,
+                                    <span class="co">&#39;LCG&#39;</span>: <span class="st">&#39;WN&#39;</span>, <span class="st">&#39;CREAM&#39;</span>: <span class="st">&#39;WN&#39;</span>,
+                                    <span class="co">&#39;Localhost&#39;</span>: <span class="st">&#39;WN&#39;</span>,
+                                    <span class="co">&#39;Interactive&#39;</span>: <span class="st">&#39;WN&#39;</span>}
+            }</code></pre>
+<p>Now that <code>ganga</code> is configured we will modify the <a href="09-minimal-dv-job.html">minimal DaVinci job</a> to store the nTuple it produces on EOS.</p>
+<p>Make a copy of <code>first-job.py</code> and add the following three lines before the <code>j.submit()</code> line:</p>
+<pre class="sourceCode python"><code class="sourceCode python">f = MassStorageFile(<span class="st">&quot;DVntuple.root&quot;</span>)
+f.outputfilenameformat = <span class="st">&quot;/starterkit/</span><span class="ot">{jid}</span><span class="st">_</span><span class="ot">{fname}</span><span class="st">&quot;</span>
+j.outputfiles = [f] </code></pre>
+<p><code>ganga</code> uses the string you pass to a <code>MassStorageFile</code> constructor to match which files created by your job this <code>MassStorageFile</code> object represents. In this case only files named <code>DVntuple.root</code> will match.</p>
+<p>The <code>outputfilenameformat</code> tells ganga where inside your EOS area to store the file and how to name it. The full path to this particular file will be:</p>
+<pre class="sourceCode bash"><code class="sourceCode bash"><span class="kw">/eos/lhcb/user/a/another/starterkit</span>/<span class="dt">{jid}_{fname}</span></code></pre>
+<div id="special-outputfileformat-patterns" class="callout panel panel-info">
+<div class="panel-heading">
+<h2><span class="glyphicon glyphicon-pushpin"></span>Special outputfileformat patterns</h2>
+</div>
+<div class="panel-body">
+<p>Your <code>outputfilenameformat</code> string can contain several special strings which will be replaced on a file by file basis. The special strings are: <code>{jid}</code>, <code>{sjid}</code> and <code>{fname}</code>. They stand for job ID, subjob ID, and the filename of the matched file respectively.</p>
+</div>
+</div>
+<div id="subjobs-and-outputfileformat" class="callout panel panel-info">
+<div class="panel-heading">
+<h2><span class="glyphicon glyphicon-pushpin"></span>Subjobs and outputfileformat</h2>
+</div>
+<div class="panel-body">
+<p>When using subjobs it is important to make sure you include the <code>{sjid}</code> pattern in your <code>outputfilenameformat</code> string, otherwise all the subjobs will overwrite each others output.</p>
+</div>
+</div>
+<p>The final line tells your <code>ganga</code> job that the <code>outputfiles</code> of this job that need special treatment.</p>
+<p>One important thing to note is that <code>ganga</code> has to be running after your job has completed to copy the files to EOS. The job can not copy things to EOS itself. You can leave <code>ganga</code> running in a <a href="02-screen.html">screen session</a> and it will copy files as they become available.</p>
+<p>Once your job has completed and the files have been copied to EOS by <code>ganga</code> you can access them from your terminal by mounting your EOS area.</p>
+<p>On <code>lxplus</code> you can mount EOS like this:</p>
+<pre class="sourceCode bash"><code class="sourceCode bash">$ <span class="kw">mkdir</span> ~/eos
+$ <span class="kw">eosmount</span> eos</code></pre>
+<pre class="output"><code>warning: assuming you gave a relative path with respect to current working directory =&gt; mountpoint=eos
+OK
+===&gt; Mountpoint   : /afs/cern.ch/user/a/another/eos
+===&gt; Fuse-Options : kernel_cache,attr_timeout=30,entry_timeout=30,max_readahead=131072,max_write=4194304,fsname=eoslhcb.cern.ch root://eoslhcb.cern.ch//eos/
+===&gt; xrootd ra             : 131072
+===&gt; xrootd cache          : 393216
+===&gt; fuse debug            : 0
+===&gt; fuse write-cache      : 1
+===&gt; fuse write-cache-size : 100000000</code></pre>
+<p>The first line creates a new directory in your home area, and the second line actually mounts EOS there. If you list the contents of your <code>~/eos</code> directory you should see</p>
+<pre class="output"><code>lhcb ship</code></pre>
+<p>If you used <code>/eos/lhcb/user/a/another/starterkit/{jid}_{fname}</code> when configuring your <code>MassStorageFiles</code> there should now be files visible here:</p>
+<pre class="sourceCode bash"><code class="sourceCode bash">$ <span class="kw">ls</span> eos/lhcb/user/a/another/starterkit</code></pre>
+<p>Once you have found your file you can open it in <code>ROOT</code> like this:</p>
+<pre class="sourceCode bash"><code class="sourceCode bash">$ <span class="kw">root</span> ~/eos/lhcb/user/a/another/starterkit/myfavouritefile.root</code></pre>
+<p>Before disconnecting from <code>lxplus</code> it is good practice to unmount your EOS directory with <code>eosumount ~/eos</code>.</p>
+<div id="direct-access-in-root" class="callout panel panel-info">
+<div class="panel-heading">
+<h2><span class="glyphicon glyphicon-pushpin"></span>Direct access in ROOT</h2>
+</div>
+<div class="panel-body">
+<p>You can also open ROOT files on EOS directly from your ROOT script with:</p>
+<pre class="sourceCode python"><code class="sourceCode python">TFile::Open(<span class="st">&quot;root://eoslhcb.cern.ch//eos/lhcb/user/a/another/starterkit/myfavouritefile.root&quot;</span>)</code></pre>
+</div>
+</div>
+        </div>
+      </div>
+      <div class="footer">
+        <a class="label swc-blue-bg" href="http://software-carpentry.org">Software Carpentry</a>
+        <a class="label swc-blue-bg" href="https://github.com/lhcb/first-analysis-steps">Source</a>
+        <a class="label swc-blue-bg" href="mailto:lhcb-starterkit@cern.ch">Contact</a>
+        <a class="label swc-blue-bg" href="LICENSE.html">License</a>
+      </div>
+    </div>
+    <!-- Javascript placed at the end of the document so the pages load faster -->
+    <script src="http://software-carpentry.org/v5/js/jquery-1.9.1.min.js"></script>
+    <script src="css/bootstrap/bootstrap-js/bootstrap.js"></script>
+  </body>
+</html>
